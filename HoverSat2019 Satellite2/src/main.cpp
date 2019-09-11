@@ -91,6 +91,8 @@ static RecordType buffer[2][BufferRecords];
 static volatile int writeBank = 0;
 static volatile int bufferIndex[2] = {0, 0};
 
+static const int TSND_121 = 13;
+int  TSND_121_ENABLE = 0;
 
 // MPU9250
 MPU9250 IMU; 
@@ -137,6 +139,7 @@ void bluetooth_rx(void);
 void bluetooth_tx(void);
 void eeprom_write(void);
 void eeprom_read(void);
+void TSND121( void );
 
 //Setup
 //------------------------------------------------------------------//
@@ -200,6 +203,9 @@ void setup() {
 
   IMU.calibrateMPU9250(IMU.gyroBias, IMU.accelBias);
   IMU.initMPU9250();
+
+  pinMode(TSND_121, OUTPUT);
+
 
   
 }
@@ -291,10 +297,20 @@ void loop() {
         bts.println(" - Start within 5 seconds -");
         time_buff2 = millis();
         log_flag = true;
-        pattern = 114;
+        pattern = 122;
         break;
       }    
       bts.println( 60 - current_time );
+      break;
+
+    case 122:   
+      if( millis() - time_buff2 >= 3000 ) {
+        time_buff2 = millis();
+        pattern = 114;
+        TSND121();
+        bts.println( "\n - Log start -" );
+        break;
+      }        
       break;
 
     case 114:   
@@ -331,8 +347,10 @@ void loop() {
       M5.Lcd.clear();
       DuctedFan.detach();
     } 
-  } else if (M5.BtnB.wasPressed() && pattern == 0) {     
-  } else if (M5.BtnC.wasPressed() && pattern == 0) {  
+  } else if (M5.BtnB.wasPressed() && pattern == 114) {     
+    TSND121();
+  } else if (M5.BtnC.wasPressed() && pattern == 114) {  
+    TSND121();
   }
 
   if (IMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01) {
@@ -628,6 +646,18 @@ void bluetooth_tx(void) {
                  
     }
 }
+
+
+// TSND 121
+//------------------------------------------------------------------//
+void TSND121( void ) {
+    TSND_121_ENABLE = 1;
+    digitalWrite( TSND_121, HIGH );
+    delay(2000);
+    digitalWrite( TSND_121, LOW );
+
+}
+
 
 
 // IRAM
